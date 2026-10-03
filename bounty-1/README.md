@@ -1,11 +1,11 @@
-# `/generate-changelog`
+# Generate a changelog
 
-A dependency-free Claude Code skill and command-line generator for turning Git history into a structured `CHANGELOG.md`.
+A Python standard-library generator with a Bash entry point for turning Git history into a structured `CHANGELOG.md`. Requires Git, Python 3.10 or newer, and Bash.
 
 ## Setup and use — three steps
 
-1. Copy the `.claude/skills/generate-changelog` directory into the target repository.
-2. Run `/generate-changelog` in Claude Code, or run `bash .claude/skills/generate-changelog/changelog.sh --repo "$PWD"`.
+1. Copy the `bounty-1` directory into the target repository.
+2. From the target repository, run `bash bounty-1/changelog.sh --repo "$PWD"` (add `--dry-run` to preview without writing).
 3. Review and commit the generated `CHANGELOG.md`.
 
 ## Behavior
@@ -33,4 +33,4 @@ Every generated section contains `Added`, `Fixed`, `Changed`, and `Removed` head
 --dry-run            Print without writing
 ```
 
-The implementation uses only Python's standard library and invokes Git without a shell.
+The Bash entry point forwards these options to the adjacent `changelog.py`, which invokes Git without a shell. Keep both files together when copying the directory. The original no-argument invocation and single positional output path are also supported; they read the current Git worktree and preserve existing manual changelog content.
