@@ -17,6 +17,23 @@ SQL_CLIENTS = {
     "isql", "clickhouse-client",
 }
 WRAPPERS = {"sudo", "doas", "command", "nohup", "env"}
+# Wrapper options that consume a following operand; the operand is not the
+# wrapped command. Long "--name=value" and attached short values consume
+# no next token.
+WRAPPER_ARG_OPTS = {
+    "sudo": {
+        "short": set("ughDCpRrtU"),
+        "long": {
+            "--user", "--group", "--host", "--chdir", "--close-from",
+            "--prompt", "--chroot", "--role", "--type", "--other-user",
+        },
+    },
+    "doas": {"short": set("aCu"), "long": set()},
+    "env": {
+        "short": set("uCS"),
+        "long": {"--unset", "--chdir", "--split-string"},
+    },
+}
 CHAIN_RE = re.compile(r"&&|\|\||;|\n|(?<!\|)\|(?!\|)")
 DROP_RE = re.compile(r"\bDROP\s+TABLE\b", re.IGNORECASE)
 TRUNCATE_RE = re.compile(r"\bTRUNCATE\b", re.IGNORECASE)
@@ -42,8 +59,20 @@ def unwrap(tokens):
             break
         tokens.pop(0)
         if first in {"sudo", "doas", "env"}:
+            arg_opts = WRAPPER_ARG_OPTS.get(first, {})
+            short_args = arg_opts.get("short", set())
+            long_args = arg_opts.get("long", set())
             while tokens and tokens[0].startswith("-"):
-                tokens.pop(0)
+                opt = tokens.pop(0)
+                if opt.startswith("--"):
+                    if "=" not in opt and opt in long_args and tokens:
+                        tokens.pop(0)
+                else:
+                    for idx, char in enumerate(opt[1:], 1):
+                        if char in short_args:
+                            if idx == len(opt) - 1 and tokens:
+                                tokens.pop(0)
+                            break
             while tokens and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[0]):
                 tokens.pop(0)
     return tokens
