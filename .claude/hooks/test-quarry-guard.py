@@ -27,10 +27,24 @@ BLOCKED_CASES = [
     "env -u FOO rm -rf /tmp/x",
     "env --chdir=/tmp rm -rf x",
     "doas -n rm -rf /tmp/x",
+    "env -S 'rm -rf /tmp/x'",
+    "env -S 'sudo -u root rm -rf /tmp/x'",
+    "env --split-string 'rm -rf /tmp/x'",
+    "env --split-string='rm -rf /tmp/x'",
+    "env -S'rm -rf /tmp/x'",
+    "env -S \"psql -c 'DROP TABLE users'\"",
+    "env -S 'git push --force'",
     "sudo rm -rf /tmp/x",
     "git push --force origin main",
     "bash -c 'rm -rf /tmp/x'",
     "psql -c 'DROP TABLE users'",
+    "env -S 'rm -rf /tmp/x'",
+    "env -S 'sudo -u root rm -rf /tmp/x'",
+    "env --split-string 'rm -rf /tmp/x'",
+    "env --split-string='rm -rf /tmp/x'",
+    "env -S'rm -rf /tmp/x'",
+    "env -S \"psql -c 'DROP TABLE users'\"",
+    "env -S 'git push --force'",
 ]
 
 ALLOWED_CASES = [
@@ -39,6 +53,9 @@ ALLOWED_CASES = [
     "env FOO=1 ls",
     "sudo -V",
     "echo DROP TABLE",
+    "env -S 'ls -la /tmp'",
+    "env -S 'echo hello'",
+    "env -S 'echo DROP TABLE'",
 ]
 
 failures = []

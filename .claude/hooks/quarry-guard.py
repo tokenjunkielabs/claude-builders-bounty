@@ -34,6 +34,11 @@ WRAPPER_ARG_OPTS = {
         "long": {"--unset", "--chdir", "--split-string"},
     },
 }
+# Wrapper options whose operand is itself a command line; its tokens are
+# classified in place instead of being dropped with the option.
+WRAPPER_SPLIT_OPTS = {
+    "env": {"short": {"S"}, "long": {"--split-string"}},
+}
 CHAIN_RE = re.compile(r"&&|\|\||;|\n|(?<!\|)\|(?!\|)")
 DROP_RE = re.compile(r"\bDROP\s+TABLE\b", re.IGNORECASE)
 TRUNCATE_RE = re.compile(r"\bTRUNCATE\b", re.IGNORECASE)
@@ -62,17 +67,34 @@ def unwrap(tokens):
             arg_opts = WRAPPER_ARG_OPTS.get(first, {})
             short_args = arg_opts.get("short", set())
             long_args = arg_opts.get("long", set())
+            split_opts = WRAPPER_SPLIT_OPTS.get(first, {})
+            split_short = split_opts.get("short", set())
+            split_long = split_opts.get("long", set())
             while tokens and tokens[0].startswith("-"):
                 opt = tokens.pop(0)
+                operand = None
                 if opt.startswith("--"):
-                    if "=" not in opt and opt in long_args and tokens:
-                        tokens.pop(0)
+                    if "=" in opt:
+                        name, _, value = opt.partition("=")
+                        if name in split_long:
+                            operand = value
+                    elif opt in long_args and tokens:
+                        following = tokens.pop(0)
+                        if opt in split_long:
+                            operand = following
                 else:
                     for idx, char in enumerate(opt[1:], 1):
                         if char in short_args:
-                            if idx == len(opt) - 1 and tokens:
-                                tokens.pop(0)
+                            if idx == len(opt) - 1:
+                                if tokens:
+                                    following = tokens.pop(0)
+                                    if char in split_short:
+                                        operand = following
+                            elif char in split_short:
+                                operand = opt[idx + 1:]
                             break
+                if operand is not None:
+                    tokens = split_tokens(operand) + tokens
             while tokens and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[0]):
                 tokens.pop(0)
     return tokens
